@@ -1,32 +1,54 @@
+import { useState, useEffect } from "react";
 import Pizza from "./Pizza";
-import { useState } from "react";
 
-export const Order = () => {
-  /**
-   * useState Hook
-   * - Never inside conditionals, for loops, while loops, do loops
-   * - always top level
-   * - hooks rely on strict ordering
-   */
+// feel free to change en-US / USD to your locale
+const intl = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 
+export default function Order() {
   const [pizzaType, setPizzaType] = useState("pepperoni");
   const [pizzaSize, setPizzaSize] = useState("M");
+  const [pizzaTypes, setPizzaTypes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  let price, selectedPizza;
+  if (!loading) {
+    selectedPizza = pizzaTypes.find((pizza) => pizzaType === pizza.id);
+    price = intl.format(
+      selectedPizza.sizes ? selectedPizza.sizes[pizzaSize] : "",
+    );
+  }
+
+  useEffect(() => {
+    fetchPizzaTypes();
+  }, []);
+
+  async function fetchPizzaTypes() {
+    const pizzasRes = await fetch("/api/pizzas");
+    const pizzasJson = await pizzasRes.json();
+    setPizzaTypes(pizzasJson);
+    setLoading(false);
+  }
 
   return (
     <div className="order">
-      <h2>Order</h2>
-      <form action="">
+      <h2>Create Order</h2>
+      <form>
         <div>
           <div>
             <label htmlFor="pizza-type">Pizza Type</label>
             <select
+              onChange={(e) => setPizzaType(e.target.value)}
               name="pizza-type"
               value={pizzaType}
-              onChange={(e) => setPizzaType(e.target.value)}
             >
-              <option value="pepperoni">The pepperoni pizza</option>
-              <option value="hawaiian">The Hawaiian pizza</option>
-              <option value="big_meat">The Big Meat pizza</option>
+              {pizzaTypes.map((pizza) => (
+                <option key={pizza.id} value={pizza.id}>
+                  {pizza.name}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -34,50 +56,54 @@ export const Order = () => {
             <div>
               <span>
                 <input
+                  onChange={(e) => setPizzaSize(e.target.value)}
                   checked={pizzaSize === "S"}
                   type="radio"
                   name="pizza-size"
                   value="S"
                   id="pizza-s"
-                  onChange={(e) => setPizzaSize(e.target.value)}
                 />
                 <label htmlFor="pizza-s">Small</label>
               </span>
               <span>
                 <input
+                  onChange={(e) => setPizzaSize(e.target.value)}
                   checked={pizzaSize === "M"}
                   type="radio"
                   name="pizza-size"
                   value="M"
                   id="pizza-m"
-                  onChange={(e) => setPizzaSize(e.target.value)}
                 />
                 <label htmlFor="pizza-m">Medium</label>
               </span>
               <span>
                 <input
+                  onChange={(e) => setPizzaSize(e.target.value)}
                   checked={pizzaSize === "L"}
                   type="radio"
                   name="pizza-size"
                   value="L"
                   id="pizza-l"
-                  onChange={(e) => setPizzaSize(e.target.value)}
                 />
                 <label htmlFor="pizza-l">Large</label>
               </span>
             </div>
           </div>
           <button type="submit">Add to Cart</button>
+        </div>
+        {loading ? (
+          <h3>LOADING …</h3>
+        ) : (
           <div className="order-pizza">
             <Pizza
-              name="Pepperoni"
-              description="another pep pizza"
-              image="/public/pizzas/pepperoni.webp"
+              name={selectedPizza.name}
+              description={selectedPizza.description}
+              image={selectedPizza.image}
             />
-            <p>$13.50</p>
+            <p>{price}</p>
           </div>
-        </div>
+        )}
       </form>
     </div>
   );
-};
+}
